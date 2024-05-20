@@ -2,12 +2,26 @@ name: Build
 
 on:
   push:
-    branches: [master]
+    branches: 
+      - "**"
 
 jobs:
   build:
-    name: Build
+    name: ${{ matrix.name }} (Build)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            target: x86_64-pc-windows-gnu
+            archive: zip
+          - name: Linux
+            target: x86_64-unknown-linux-musl
+            archive: tar.gz
+          - name: macOS
+            target: x86_64-apple-darwin
+            archive: zip
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,12 +29,13 @@ jobs:
         id: compile
         uses: rust-build/rust-build.action@v1.4.4
         with:
-          RUSTTARGET: x86_64-pc-windows-gnu
+          RUSTTARGET: ${{ matrix.target }}
+          ARCHIVE_TYPES: ${{ matrix.archive }}
           UPLOAD_MODE: none
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: Binary
+          name: Binary ${{ matrix.name }}
           path: |
             ${{ steps.compile.outputs.BUILT_ARCHIVE }}
             ${{ steps.compile.outputs.BUILT_CHECKSUM }}
